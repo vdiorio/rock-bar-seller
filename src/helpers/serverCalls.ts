@@ -1,20 +1,14 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Product } from "../interfaces";
 
-const API_URL = "http://localhost:3001";
+const API_URL = "https://eskinarockbarapi.hopto.org";
 
 const fetchWithToken = async (
   url: string,
   method = "GET",
   body: any = null
 ) => {
-  const token = localStorage.getItem("token");
-
-  if (!token) {
-    localStorage.clear();
-    window.location.href = "/login";
-    return;
-  }
-
+  const token = await AsyncStorage.getItem("token");
   const response = await fetch(`${API_URL}${url}`, {
     method,
     headers: {
@@ -25,8 +19,7 @@ const fetchWithToken = async (
   });
 
   if (response.status === 401) {
-    localStorage.clear();
-    window.location.href = "/login";
+    AsyncStorage.clear();
     return;
   }
 
@@ -67,10 +60,14 @@ export const updateCommandValue = async (id: string, value: number) => {
 
 export const getProductList = async () => {
   let url = "/products";
-  if (localStorage.getItem("role") === "SELLER") {
-    url += `?sellerId=${localStorage.getItem("id")}`;
-  }
-  return await fetchWithToken(url);
+  return (await fetchWithToken(url)) as Promise<
+    {
+      id: number;
+      name: string;
+      price: number;
+      qtd: number;
+    }[]
+  >;
 };
 
 interface productDebit {
@@ -115,7 +112,14 @@ export const login = async ({
     },
     body: JSON.stringify({ email, password }),
   });
-  const { token, role, id } = await response.json();
+  const data = (await response.json()) as {
+    token: string;
+    role: string;
+    id: string;
+    message: string;
+  };
+  if (!response.ok) throw new Error(data.message);
+  const { token, role, id } = data;
   return { token, role, id };
 };
 
@@ -155,4 +159,12 @@ export const changeUserCategory = async (id: string, categoryId: number) => {
 
 export const createSeller = async (userData: any) => {
   return await fetchWithToken("/users", "POST", userData);
+};
+
+export const cancelOrder = async (orderId: number) => {
+  return fetchWithToken(`/command-orders/${orderId}`, "PUT");
+};
+
+export const getItemsSold = async () => {
+  return fetchWithToken("/command-orders/total");
 };

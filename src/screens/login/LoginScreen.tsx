@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Image,
   View,
@@ -8,10 +8,15 @@ import {
   Button,
   ActivityIndicator,
   TouchableWithoutFeedback,
+  TouchableHighlight,
 } from "react-native";
 import Main from "../../components/Main";
 import { StyleSheet } from "react-native";
-import { login } from "../../helpers/serverCalls";
+import { login, validateToken } from "../../helpers/serverCalls";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation } from "@react-navigation/native";
+import { StackTypes } from "../../../App";
+import HiddenModal from "./HiddenModal";
 
 const { width, height } = Dimensions.get("window");
 
@@ -68,21 +73,46 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 30,
   },
+  errorMessage: {
+    color: "red",
+    textAlign: "center",
+    marginBottom: 10,
+  },
 });
 
 export default function LoginScreen() {
   const logo = require("../../../assets/logo.png");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loginLoad, setLoading] = useState(false);
+  const [loginLoad, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const navigation = useNavigation<StackTypes>();
 
   const handleLogin = () => {
+    setErrorMessage("");
     setLoading(true);
     login({ email, password })
-      .then((response) => console.log(response))
-      .catch((response) => console.log(response))
+      .then(({ token, role, id }) =>
+        AsyncStorage.multiSet([
+          ["token", token],
+          ["role", role],
+          ["id", String(id)],
+        ])
+      )
+      .then(() => navigation.navigate("Seller"))
+      .catch(({ message }) => {
+        setLoading(false);
+        setErrorMessage(message);
+      })
       .finally(() => setLoading(false));
   };
+
+  useEffect(() => {
+    validateToken()
+      .then(() => navigation.navigate("Seller"))
+      .catch(() => setLoading(false));
+  }, []);
 
   return (
     <Main>
@@ -96,6 +126,7 @@ export default function LoginScreen() {
           style={styles.input}
           placeholder="seu@email.com.br"
           onChangeText={(text) => setEmail(text)}
+          autoCapitalize="none"
         />
         <Text style={styles.label}>Senha:</Text>
         <TextInput
@@ -104,21 +135,24 @@ export default function LoginScreen() {
           placeholder="********"
           secureTextEntry={true}
           onChangeText={(text) => setPassword(text)}
+          autoCapitalize="none"
         />
-        {loginLoad ? (
+        {errorMessage && (
+          <Text style={styles.errorMessage}>{errorMessage}</Text>
+        )}
+        <Button
+          title="login"
+          onPress={handleLogin}
+          disabled={loginLoad || !email.length || !password.length}
+        />
+        {loginLoad && (
           // Show the loading indicator when loginLoad is true
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#FFFFFF" />
           </View>
-        ) : (
-          // Render the button when loginLoad is false
-          <TouchableWithoutFeedback onPress={handleLogin} disabled={loginLoad}>
-            <View style={styles.loginButton}>
-              <Text style={styles.loginButtonText}>Login</Text>
-            </View>
-          </TouchableWithoutFeedback>
         )}
       </View>
+      <HiddenModal />
     </Main>
   );
 }
