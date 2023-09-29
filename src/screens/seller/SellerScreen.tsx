@@ -61,7 +61,6 @@ const styles = StyleSheet.create({
 
 export default function SellerScreen() {
   const [selectedTab, setSelectedTab] = useState("Produtos"); // State to track selected tab
-  const [isModalVisible, setIsModalVisible] = useState(false); // State for modal visibility
 
   const MenuOption = ({ name }: { name: string }) => {
     return (
@@ -100,7 +99,14 @@ export default function SellerScreen() {
     ]);
 
   return (
-    <Main cStyle={{ justifyContent: "flex-start", paddingTop: "10%" }}>
+    <Main
+      cStyle={{
+        justifyContent: "flex-start",
+        paddingTop: "10%",
+        flex: 1,
+        height: "100%",
+      }}
+    >
       <View style={styles.tabContainer}>
         <MenuOption name="Produtos" />
         <MenuOption name="Retiradas" />

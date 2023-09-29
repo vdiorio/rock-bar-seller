@@ -129,7 +129,7 @@ export default function Pedidos() {
           )}
         </ScrollView>
       </View>
-      <View style={styles.buttonContainer}>
+      <View style={[styles.buttonContainer, { flex: 0.05 }]}>
         <Button title="Limpar Comanda" onPress={clearCards} color="#757687" />
         <Button
           title="Gerar Pedido"
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     margin: 12,
   },
   productContainer: {
-    height: "80%",
+    flex: 0.9,
     backgroundColor: "rgba(255,255,255,0.1)",
     marginBottom: 15,
   },
